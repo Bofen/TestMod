@@ -1,0 +1,134 @@
+plugins {
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '6.0.+'
+}
+
+version = '1.0'
+group = 'com.example.flymod'
+archivesBaseName = 'flymod'
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
+
+minecraft {
+    mappings channel: 'official', version: '1.21.8'
+
+    copyIdeResources = true
+
+    runs {
+        configureEach {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                flymod {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        client {
+            property 'forge.enabledGameTestNamespaces', 'flymod'
+        }
+
+        server {
+            property 'forge.enabledGameTestNamespaces', 'flymod'
+            args '--nogui'
+        }
+
+        gameTestServer {
+            property 'forge.enabledGameTestNamespaces', 'flymod'
+        }
+
+        data {
+            workingDirectory project.file('run-data')
+
+            args '--mod', 'flymod', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+repositories {
+    maven {
+        name = 'ModMaven'
+        url = 'https://modmaven.dev/'
+    }
+    maven {
+        name = 'Progwml6 maven'
+        url = 'https://dvs1.progwml6.com/files/maven/'
+    }
+    maven {
+        name = 'JEI Maven'
+        url = 'https://dvs1.progwml6.com/files/maven/'
+    }
+    maven {
+        name = 'Maven Central'
+        url = 'https://repo1.maven.org/maven2/'
+    }
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.21.8-58.1.0'
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    var replaceProperties = [
+            minecraft_version: '1.21.8',
+            minecraft_version_range: '[1.21.8,1.22)',
+            forge_version: '58.1.0',
+            forge_version_range: '[58.1.0,)',
+            loader_version_range: '[4,)',
+            mod_id: 'flymod',
+            mod_name: 'Fly Mod',
+            mod_license: 'All rights reserved',
+            mod_version: '1.0',
+            mod_authors: 'YourName',
+            mod_description: 'A mod that allows flying with H key.'
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties + [project: project]
+    }
+}
+
+tasks.named('jar', Jar).configure {
+    manifest {
+        attributes([
+                'Specification-Title': 'flymod',
+                'Specification-Vendor': 'example',
+                'Specification-Version': '1',
+                'Implementation-Title': 'flymod',
+                'Implementation-Version': '1.0',
+                'Implementation-Vendor': 'example',
+                'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+
+    finalizedBy 'reobfJar'
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            artifact jar
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/mcmodsrepo"
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
